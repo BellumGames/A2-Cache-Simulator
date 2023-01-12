@@ -60,6 +60,11 @@ namespace A2
             Application.Exit();
         }
 
+        private void groupBox5_Enter(object sender, EventArgs e)
+        {
+
+        }
+
         private void IOneeded()
         {
             if (!File.Exists(@"..\..\..\output\history.txt"))

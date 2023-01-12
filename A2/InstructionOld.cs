@@ -38,84 +38,76 @@ namespace A2
         //Function that take the banchmark instruction and procesed
         public static Tuple<double, double, int, int, int, int> Simulation(List<Tuple<char, uint, uint>> Instructions, int IRMax, uint normalPC, int latenta, int NR_PORT, int N_PEN, int FR_IC, int FR, int SIZE_DC, int SIZE_IC, int IBS)
         {
-            Queue<Instruction> data = new Queue<Instruction>();
             List<Instruction> instructionsFromBanchmark = new List<Instruction>();
+            Instruction[,] instructionsFromMemory = new Instruction[100000000, IRMax];
             int numberOfAritmetical = 0;
             int numberOfBranches = 0;
             int numberOfStores = 0;
             int numberOfLoads = 0;
             int ticks = 0;
 
-            Queue<Instruction> dataCache = new Queue<Instruction>(SIZE_DC);
-            Queue<Instruction> instructionCache = new Queue<Instruction>(SIZE_IC);
-            Queue<Instruction> instructionBufferSize = new Queue<Instruction>(IBS);
+            int row = 0;
+            int col = 0;
 
-            for (int i = 0; i < FR_IC; i++)
+            foreach(var item in Instructions)
             {
-                instructionCache.Enqueue(new Instruction(Instructions[i].Item1, Instructions[i].Item2, Instructions[i].Item3));
-            }
-
-            for (int i = 0; i < FR; i++)
-            {
-                instructionBufferSize.Enqueue(instructionCache.Dequeue());
-            }
-
-            for (int i = 0; i < IRMax; i++)
-            {
-                instructionsFromBanchmark.Add(instructionBufferSize.Dequeue());
+                instructionsFromBanchmark.Add(new Instruction(item.Item1, item.Item2, item.Item3));
             }
 
             foreach (Instruction instruction in instructionsFromBanchmark)
             {
                 while (instruction.currentPC != normalPC)
                 {
-                    //TODO: add the aritmetico-logic instruction to IC buffer, increment the number of instructions
-                    //porcesed
+                    if (col == IRMax)
+                    {
+                        row++;
+                        col = 0;
+                    }
+                    instructionsFromMemory[row, col++] = instruction;
 
-                    data.Enqueue(instruction);
                     normalPC++;
                     numberOfAritmetical++;
                 }
                 if (instruction.instructionType == Constants.BRANCH)
                 {
-                    //TODO: add the branch instruction to IC buffer, increment the number of branch instructions
-                    //porcesed
-
+                    if (col == IRMax)
+                    {
+                        row++;
+                        col = 0;
+                    }
+                    instructionsFromMemory[row, col++] = instruction;
                     normalPC = instruction.target;
                     numberOfBranches++;
                 }
                 if (instruction.instructionType == Constants.STORE)
                 {
-                    //TODO: add the store instruction to IC buffer, increment the number of store instructions
-                    //porcesed
-
+                    if (col == IRMax)
+                    {
+                        row++;
+                        col = 0;
+                    }
+                    instructionsFromMemory[row, col++] = instruction;
                     normalPC++;
                     numberOfStores++;
                 }
                 if (instruction.instructionType == Constants.LOAD)
                 {
-                    //TODO: add the store instruction to IC buffer, increment the number of load instructions
-                    //porcesed
-
+                    if (col == IRMax)
+                    {
+                        row++;
+                        col = 0;
+                    }
+                    instructionsFromMemory[row, col++] = instruction;
                     normalPC++;
                     numberOfLoads++;
                 }
-                data.Enqueue(instruction);
+                
             }
 
-            ticks = data.Count() / 2 * latenta;
+            ticks = latenta * row;
             int memoryAccess = 0;
-            Instruction[,] instructions = new Instruction[1000000, IRMax];
 
-            for (int i = 0; i < data.Count; i++)
-            {
-                for (int j = 0; j < IRMax; j++)
-                {
-                    instructions[i, j] = data.Dequeue();
-                }
-            }
-
-            foreach (Instruction instruction in instructions)
+            foreach (Instruction instruction in instructionsFromMemory)
             {
                 if (memoryAccess < GetPortState(NR_PORT))
                 {
@@ -126,7 +118,6 @@ namespace A2
                 }
                 else
                 {
-                    //problema:
                     if (instruction.instructionType == Constants.STORE || instruction.instructionType == Constants.LOAD)
                     {
                         memoryAccess = 0;
@@ -134,11 +125,10 @@ namespace A2
                     }
                 }
             }
-            //TODO: Calculate all the metrics.
-            double IRcalc = (double)data.Count() / ticks;
+            double issueRate =  (numberOfAritmetical + numberOfBranches + numberOfLoads + numberOfStores) / ticks;
             double missCachePenalty = numberOfLoads * Constants.CACHE_MISS * N_PEN;
             ticks += N_PEN;
-            return new Tuple<double, double, int, int, int, int>(IRcalc, missCachePenalty, ticks, numberOfBranches, numberOfLoads, numberOfStores);
+            return new Tuple<double, double, int, int, int, int>(issueRate, missCachePenalty, ticks, numberOfBranches, numberOfLoads, numberOfStores);
         }
     }
 }

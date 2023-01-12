@@ -48,18 +48,18 @@
             this.biportRadio = new System.Windows.Forms.RadioButton();
             this.uniportRadio = new System.Windows.Forms.RadioButton();
             this.groupBox4 = new System.Windows.Forms.GroupBox();
+            this.label9 = new System.Windows.Forms.Label();
+            this.label10 = new System.Windows.Forms.Label();
             this.comboFR_DC = new System.Windows.Forms.ComboBox();
             this.groupBox3 = new System.Windows.Forms.GroupBox();
+            this.label8 = new System.Windows.Forms.Label();
+            this.label7 = new System.Windows.Forms.Label();
             this.comboFR_IC = new System.Windows.Forms.ComboBox();
             this.textBoxInstructiuni = new System.Windows.Forms.TextBox();
             this.textBoxRezultate = new System.Windows.Forms.TextBox();
             this.groupBox5 = new System.Windows.Forms.GroupBox();
             this.btnEXIT = new System.Windows.Forms.Button();
             this.textBoxConsole = new System.Windows.Forms.TextBox();
-            this.label7 = new System.Windows.Forms.Label();
-            this.label8 = new System.Windows.Forms.Label();
-            this.label9 = new System.Windows.Forms.Label();
-            this.label10 = new System.Windows.Forms.Label();
             this.groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.latentaUpDown)).BeginInit();
             this.groupBox2.SuspendLayout();
@@ -332,6 +332,24 @@
             this.groupBox4.TabStop = false;
             this.groupBox4.Text = "Data Cache";
             // 
+            // label9
+            // 
+            this.label9.AutoSize = true;
+            this.label9.Location = new System.Drawing.Point(14, 56);
+            this.label9.Name = "label9";
+            this.label9.Size = new System.Drawing.Size(53, 15);
+            this.label9.TabIndex = 31;
+            this.label9.Text = "SIZE_DC:";
+            // 
+            // label10
+            // 
+            this.label10.AutoSize = true;
+            this.label10.Location = new System.Drawing.Point(23, 25);
+            this.label10.Name = "label10";
+            this.label10.Size = new System.Drawing.Size(44, 15);
+            this.label10.TabIndex = 30;
+            this.label10.Text = "FR_DC:";
+            // 
             // comboFR_DC
             // 
             this.comboFR_DC.FormattingEnabled = true;
@@ -357,6 +375,24 @@
             this.groupBox3.TabIndex = 29;
             this.groupBox3.TabStop = false;
             this.groupBox3.Text = "Instruction Cache";
+            // 
+            // label8
+            // 
+            this.label8.AutoSize = true;
+            this.label8.Location = new System.Drawing.Point(19, 56);
+            this.label8.Name = "label8";
+            this.label8.Size = new System.Drawing.Size(48, 15);
+            this.label8.TabIndex = 29;
+            this.label8.Text = "SIZE_IC:";
+            // 
+            // label7
+            // 
+            this.label7.AutoSize = true;
+            this.label7.Location = new System.Drawing.Point(28, 25);
+            this.label7.Name = "label7";
+            this.label7.Size = new System.Drawing.Size(39, 15);
+            this.label7.TabIndex = 28;
+            this.label7.Text = "FR_IC:";
             // 
             // comboFR_IC
             // 
@@ -404,6 +440,7 @@
             this.groupBox5.TabIndex = 30;
             this.groupBox5.TabStop = false;
             this.groupBox5.Text = "Output";
+            this.groupBox5.Enter += new System.EventHandler(this.groupBox5_Enter);
             // 
             // btnEXIT
             // 
@@ -424,42 +461,6 @@
             this.textBoxConsole.Size = new System.Drawing.Size(200, 215);
             this.textBoxConsole.TabIndex = 30;
             this.textBoxConsole.Text = "textBoxConsole";
-            // 
-            // label7
-            // 
-            this.label7.AutoSize = true;
-            this.label7.Location = new System.Drawing.Point(28, 25);
-            this.label7.Name = "label7";
-            this.label7.Size = new System.Drawing.Size(39, 15);
-            this.label7.TabIndex = 28;
-            this.label7.Text = "FR_IC:";
-            // 
-            // label8
-            // 
-            this.label8.AutoSize = true;
-            this.label8.Location = new System.Drawing.Point(19, 56);
-            this.label8.Name = "label8";
-            this.label8.Size = new System.Drawing.Size(48, 15);
-            this.label8.TabIndex = 29;
-            this.label8.Text = "SIZE_IC:";
-            // 
-            // label9
-            // 
-            this.label9.AutoSize = true;
-            this.label9.Location = new System.Drawing.Point(14, 56);
-            this.label9.Name = "label9";
-            this.label9.Size = new System.Drawing.Size(53, 15);
-            this.label9.TabIndex = 31;
-            this.label9.Text = "SIZE_DC:";
-            // 
-            // label10
-            // 
-            this.label10.AutoSize = true;
-            this.label10.Location = new System.Drawing.Point(23, 25);
-            this.label10.Name = "label10";
-            this.label10.Size = new System.Drawing.Size(44, 15);
-            this.label10.TabIndex = 30;
-            this.label10.Text = "FR_DC:";
             // 
             // A2
             // 
