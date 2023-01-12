@@ -223,7 +223,7 @@ namespace A2
             }
             textBoxConsole.Text = s;
             string res = string.Empty;
-
+            //adaugire
             foreach (var item in allTraceData)
             {
                 Tuple<double, double, int, int, int, int> results = Instruction.Simulation(item.Value, IRmax, item.Value[0].Item2, latenta, NR_PORT, N_PEN, FR_IC, FR, SIZE_DC, SIZE_IC, IBS);
