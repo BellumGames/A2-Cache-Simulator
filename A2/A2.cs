@@ -6,8 +6,15 @@ namespace A2
     public partial class A2 : Form
     {
         private Dictionary<string, List<Tuple<char, uint, uint>>> allTraceData = new Dictionary<string, List<Tuple<char, uint, uint>>>();
-        public int latenta, NR_PORT, FR, IRmax, IBS, N_PEN, NR_REG, FR_IC, SIZE_IC, FR_DC, SIZE_DC; //Parameters for simulation
-        public int MissRateIC, MissRateDC, PercentageIBS_Empty, Influence_IRmax, OptimalREG_Number; //This should be outputed in results.csv maybe? Cosmin any ideas?
+        private int latenta, NR_PORT, FR, IRmax, IBS, N_PEN, NR_REG, FR_IC, SIZE_IC, FR_DC, SIZE_DC; //Parameters for simulation
+        private List<string> loadList = new List<string>();
+        private List<string> storeList = new List<string>();
+        private List<string> branchList = new List<string>();
+        private List<string> totalList = new List<string>();
+        private List<string> oneCycleList = new List<string>();
+        private List<string> issueRateList = new List<string>();
+        private List<string> ticksList = new List<string>();
+        //public int MissRateIC, MissRateDC, PercentageIBS_Empty, Influence_IRmax, OptimalREG_Number; //This should be outputed in results.csv maybe? Cosmin any ideas?
 
         //date out:
         //rata de procesare (nr instr raportat la nr cicli de executie)
@@ -215,39 +222,94 @@ namespace A2
 
         private void Simulate()
         {
-            textBoxConsole.Text = "Finish";
-            /*string s = string.Empty;
-            foreach (var item in allTraceData["FBUBBLE.TRC"])
+            string results = string.Empty;
+            string instructions = string.Empty;
+            foreach (var item in allTraceData) 
             {
-                s += item.Item1 + " " + item.Item2 + " " + item.Item3 + Environment.NewLine;
+                Tuple<double, double, int, int, int, int, int> temp = Instruction.Simulation(item.Value, IRmax, item.Value[0].Item2, latenta, NR_PORT, N_PEN, FR_IC, FR, SIZE_DC, SIZE_IC, IBS);
+                instructions += item.Key + Environment.NewLine;
+                results += item.Key + Environment.NewLine;
+
+                instructions += "Load: " + temp.Item5 + Environment.NewLine;
+                instructions += "Store: " + temp.Item4 + Environment.NewLine;
+                instructions += "Branch: " + temp.Item3 + Environment.NewLine;
+                instructions += "Total: " + temp.Item7 + Environment.NewLine;
+
+                results += "One-cycle: " + temp.Item2 + Environment.NewLine; //nu-s sigur daca sunt oneticks
+                results += "Issue Rate: " + temp.Item1 + Environment.NewLine;
+                results += "Ticks: " + temp.Item6 + Environment.NewLine;
+
+                loadList.Add(temp.Item5.ToString());
+                storeList.Add(temp.Item4.ToString());
+                branchList.Add(temp.Item3.ToString());
+                totalList.Add(temp.Item7.ToString());
+
+                oneCycleList.Add(temp.Item2.ToString());
+                issueRateList.Add(temp.Item1.ToString());
+                ticksList.Add(temp.Item6.ToString());
+
+                instructions += Environment.NewLine;
+                results += Environment.NewLine;
             }
-            textBoxConsole.Text = s;
-            string res = string.Empty;
-            //adaugire
-            foreach (var item in allTraceData)
-            {
-                Tuple<double, double, int, int, int, int> results = Instruction.Simulation(item.Value, IRmax, item.Value[0].Item2, latenta, NR_PORT, N_PEN, FR_IC, FR, SIZE_DC, SIZE_IC, IBS);
-                res += item.Key + Environment.NewLine;
-                res += results.Item1 + " " + results.Item2 + " " + results.Item3 + " " + results.Item4 + " " + results.Item5 + " " + results.Item6 + Environment.NewLine;
-                break;
-            }
-            textBoxRezultate.Text = res;*/
+            textBoxRezultate.Text = results;
+            textBoxInstructiuni.Text = instructions;
+            textBoxConsole.Text = "Finnished!";
         }
 
         private void WriteResults()
         {
             using (StreamWriter sw = new StreamWriter(@"..\..\..\output\results.csv"))
             {
-                /*
-                sw.WriteLine(",,,,");
-                sw.WriteLine(",,,,");
-                sw.WriteLine(",,Data,Result");
-                sw.WriteLine($",,Miss Rate in IC,{MissRateIC}");
-                sw.WriteLine($",,Miss Rate in DC,{MissRateDC}");
-                sw.WriteLine($",,Percentage of prefetch buffer that is empty,{PercentageIBS_Empty}");
-                sw.WriteLine($",,Influence of IRmax on performance,{Influence_IRmax}");
-                sw.WriteLine($",,Optimal number of registers,{OptimalREG_Number}");
-                */
+                string names = string.Empty;
+                string loads = string.Empty;
+                string stores = string.Empty;
+                string branches = string.Empty;
+                string totals = string.Empty;
+                string oneCycles = string.Empty;
+                string issueRates = string.Empty;
+                string multiTicks = string.Empty;
+
+                foreach (var fileName in allTraceData) 
+                {
+                    names += fileName.Key + ",";
+                }
+                foreach (string s in loadList) 
+                {
+                    loads += s + ",";
+                }
+                foreach (string s in storeList) 
+                {
+                    stores += s + ",";
+                }
+                foreach (string s in branchList) 
+                {
+                    branches += s + ",";
+                }
+                foreach (string s in totalList) 
+                {
+                    totals += s + ",";
+                }
+                foreach (string s in oneCycleList) 
+                {
+                    oneCycles += s + ",";
+                }
+                foreach (string s in issueRateList) 
+                {
+                    issueRates += s + ",";
+                }
+                foreach (string s in ticksList) 
+                {
+                    multiTicks += s + ",";
+                }
+
+                sw.WriteLine(names);
+                sw.WriteLine(loads);
+                sw.WriteLine(stores);
+                sw.WriteLine(branches);
+                sw.WriteLine(totals);
+                sw.WriteLine(oneCycles);
+                sw.WriteLine(issueRates);
+                sw.WriteLine(multiTicks);
                 sw.Close();
             }
         }

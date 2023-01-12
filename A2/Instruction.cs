@@ -36,7 +36,7 @@ namespace A2
         }
         //13 februarie restanta FLorea
         //Function that take the banchmark instruction and procesed
-        public static Tuple<double, double, int, int, int, int> Simulation(List<Tuple<char, uint, uint>> Instructions, int IRMax, uint normalPC, int latenta, int NR_PORT, int N_PEN, int FR_IC, int FR, int SIZE_DC, int SIZE_IC, int IBS)
+        public static Tuple<double, double, int, int, int, int, int> Simulation(List<Tuple<char, uint, uint>> Instructions, int IRMax, uint normalPC, int latenta, int NR_PORT, int N_PEN, int FR_IC, int FR, int SIZE_DC, int SIZE_IC, int IBS)
         {
             Queue<Instruction> data = new Queue<Instruction>();
             List<Instruction> instructionsFromBanchmark = new List<Instruction>();
@@ -46,99 +46,86 @@ namespace A2
             int numberOfLoads = 0;
             int ticks = 0;
 
-            Queue<Instruction> dataCache = new Queue<Instruction>(SIZE_DC);
-            Queue<Instruction> instructionCache = new Queue<Instruction>(SIZE_IC);
+            // Initialize caches
+            Dictionary<uint, Instruction> dataCache = new Dictionary<uint, Instruction>(SIZE_DC);
+            Dictionary<uint, Instruction> instructionCache = new Dictionary<uint, Instruction>(SIZE_IC);
             Queue<Instruction> instructionBufferSize = new Queue<Instruction>(IBS);
 
+            // Load initial data into instruction cache
             for (int i = 0; i < FR_IC; i++)
             {
-                instructionCache.Enqueue(new Instruction(Instructions[i].Item1, Instructions[i].Item2, Instructions[i].Item3));
+                instructionCache.Add(Instructions[i].Item2, new Instruction(Instructions[i].Item1, Instructions[i].Item2, Instructions[i].Item3));
             }
 
+            // Load initial data into instruction buffer
             for (int i = 0; i < FR; i++)
             {
-                instructionBufferSize.Enqueue(instructionCache.Dequeue());
+                instructionBufferSize.Enqueue(instructionCache[Instructions[i].Item2]);
             }
 
+            // Process benchmark instructions
             for (int i = 0; i < IRMax; i++)
             {
-                instructionsFromBanchmark.Add(instructionBufferSize.Dequeue());
-            }
+                Instruction instruction = instructionBufferSize.Dequeue();
+                instructionsFromBanchmark.Add(instruction);
 
-            foreach (Instruction instruction in instructionsFromBanchmark)
-            {
-                while (instruction.currentPC != normalPC)
+                // Aritmetical instruction
+                if (instruction.currentPC != normalPC)
                 {
-                    //TODO: add the aritmetico-logic instruction to IC buffer, increment the number of instructions
-                    //porcesed
-
                     data.Enqueue(instruction);
                     normalPC++;
                     numberOfAritmetical++;
                 }
-                if (instruction.instructionType == Constants.BRANCH)
+                // Branch instruction
+                else if (instruction.instructionType == Constants.BRANCH)
                 {
-                    //TODO: add the branch instruction to IC buffer, increment the number of branch instructions
-                    //porcesed
-
                     normalPC = instruction.target;
                     numberOfBranches++;
                 }
-                if (instruction.instructionType == Constants.STORE)
+                // Store instruction
+                else if (instruction.instructionType == Constants.STORE)
                 {
-                    //TODO: add the store instruction to IC buffer, increment the number of store instructions
-                    //porcesed
-
+                    // Check if data is already in data cache
+                    if (dataCache.ContainsKey(instruction.target))
+                    {
+                        dataCache[instruction.target] = instruction;
+                    }
+                    // Otherwise, evict the oldest item in data cache if full
+                    else if (dataCache.Count == SIZE_DC)
+                    {
+                        dataCache.Remove(dataCache.Keys.First());
+                        dataCache.Add(instruction.target, instruction);
+                    }
+                    else
+                    {
+                        dataCache.Add(instruction.target, instruction);
+                    }
                     normalPC++;
                     numberOfStores++;
                 }
-                if (instruction.instructionType == Constants.LOAD)
+                // Load instruction
+                else if (instruction.instructionType == Constants.LOAD)
                 {
-                    //TODO: add the store instruction to IC buffer, increment the number of load instructions
-                    //porcesed
-
+                    // Check if data is already in data cache
+                    if (dataCache.ContainsKey(instruction.target))
+                    {
+                        data.Enqueue(dataCache[instruction.target]);
+                    }
+                    else
+                    {
+                        data.Enqueue(instruction);
+                    }
                     normalPC++;
                     numberOfLoads++;
                 }
-                data.Enqueue(instruction);
             }
 
-            ticks = data.Count() / 2 * latenta;
-            int memoryAccess = 0;
-            Instruction[,] instructions = new Instruction[1000000, IRMax];
+            // Calculate number of ticks
+            ticks = data.Count / 2 * latenta;
 
-            for (int i = 0; i < data.Count; i++)
-            {
-                for (int j = 0; j < IRMax; j++)
-                {
-                    instructions[i, j] = data.Dequeue();
-                }
-            }
-
-            foreach (Instruction instruction in instructions)
-            {
-                if (memoryAccess < GetPortState(NR_PORT))
-                {
-                    if (instruction.instructionType == Constants.STORE || instruction.instructionType == Constants.LOAD)
-                    {
-                        memoryAccess++;
-                    }
-                }
-                else
-                {
-                    //problema:
-                    if (instruction.instructionType == Constants.STORE || instruction.instructionType == Constants.LOAD)
-                    {
-                        memoryAccess = 0;
-                        ticks += latenta;
-                    }
-                }
-            }
-            //TODO: Calculate all the metrics.
-            double IRcalc = (double)data.Count() / ticks;
-            double missCachePenalty = numberOfLoads * Constants.CACHE_MISS * N_PEN;
-            ticks += N_PEN;
-            return new Tuple<double, double, int, int, int, int>(IRcalc, missCachePenalty, ticks, numberOfBranches, numberOfLoads, numberOfStores);
+            // Return results in Tuple
+            return Tuple.Create((double)numberOfAritmetical / IRMax, (double)numberOfBranches / IRMax, numberOfBranches, numberOfStores, numberOfLoads, ticks, numberOfAritmetical + numberOfBranches + numberOfStores + numberOfLoads);
         }
+
     }
 }
