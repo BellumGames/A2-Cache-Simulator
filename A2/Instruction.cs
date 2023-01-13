@@ -126,6 +126,5 @@ namespace A2
             // Return results in Tuple
             return Tuple.Create((double)numberOfAritmetical / IRMax, (double)numberOfBranches / IRMax, numberOfBranches, numberOfStores, numberOfLoads, ticks, numberOfAritmetical + numberOfBranches + numberOfStores + numberOfLoads);
         }
-
     }
 }
