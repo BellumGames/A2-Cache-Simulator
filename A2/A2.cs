@@ -1,20 +1,22 @@
 using System.Collections.Generic;
 using System.IO;
+using System.Net.Http.Headers;
 
 namespace A2
 {
     public partial class A2 : Form
     {
-        private Dictionary<string, List<Tuple<char, uint, uint>>> allTraceData = new Dictionary<string, List<Tuple<char, uint, uint>>>();
         private int latenta, NR_PORT, FR, IRmax, IBS, N_PEN, NR_REG, FR_IC, SIZE_IC, FR_DC, SIZE_DC; //Parameters for simulation
         private List<string> loadList = new List<string>();
         private List<string> storeList = new List<string>();
         private List<string> branchList = new List<string>();
+        private List<string> arythmeticList = new List<string>();
         private List<string> totalList = new List<string>();
-        private List<string> oneCycleList = new List<string>();
         private List<string> issueRateList = new List<string>();
         private List<string> ticksList = new List<string>();
         //public int MissRateIC, MissRateDC, PercentageIBS_Empty, Influence_IRmax, OptimalREG_Number; //This should be outputed in results.csv maybe? Cosmin any ideas?
+
+        private Dictionary<string, List<Instruction>> allTraceData = new Dictionary<string, List<Instruction>>();
 
         //date out:
         //rata de procesare (nr instr raportat la nr cicli de executie)
@@ -190,24 +192,42 @@ namespace A2
             }
         }
 
+        private InstructionType? GetInstructionType(string instructionShortcut)
+        {
+            switch (instructionShortcut)
+            {
+                case "B":
+                    return InstructionType.Branch;
+                case "L":
+                    return InstructionType.Load;
+                case "S":
+                    return InstructionType.Store;
+                default: break;
+            }
+            return null;
+        }
+
         private void ReadTrace(FileInfo file)
         {
-            List<Tuple<char, uint, uint>> traceData = new List<Tuple<char, uint, uint>>();
-            string allText = File.ReadAllText(file.FullName);
-            allText = allText.Replace("\n", "");
-            string[] rows = allText.Split(Environment.NewLine);
-            foreach (string row in rows)
+            List<Instruction> instructionsFromBenchmark = new List<Instruction>();
+            string filePath = file.FullName;
+            List<string> fileContent = new List<string>();
+            if (!String.IsNullOrEmpty(filePath))
             {
-                string[] bits = row.Split(" ", StringSplitOptions.RemoveEmptyEntries);
-                for (int i = 0; i < bits.Length; i += 3)
+                fileContent = File.ReadAllText(filePath).Split(' ').Select(a => a.Trim()).ToList();
+                fileContent = fileContent.Where(x => string.IsNullOrWhiteSpace(x) == false).ToList();
+                for (int i = 0; i < fileContent.Count; i += 3)
                 {
-                    char instruction = bits[i][0];
-                    uint addressOne = uint.Parse(bits[i + 1]);
-                    uint addressTwo = uint.Parse(bits[i + 2]);
-                    traceData.Add(new Tuple<char, uint, uint>(instruction, addressOne, addressTwo));
+                    Instruction instruction = new Instruction
+                    {
+                        instructionType = GetInstructionType(fileContent[i]),
+                        currentPC = Convert.ToUInt32(fileContent[i + 1]),
+                        targetAddress = Convert.ToUInt32(fileContent[i + 2])
+                    };
+                    instructionsFromBenchmark.Add(instruction);
                 }
             }
-            allTraceData.Add(file.Name, traceData);
+            allTraceData.Add(file.Name, instructionsFromBenchmark);
         }
 
         private void ReadTraces()
@@ -226,27 +246,27 @@ namespace A2
             string instructions = string.Empty;
             foreach (var item in allTraceData) 
             {
-                Tuple<double, double, int, int, int, int, int> temp = Instruction.Simulation(item.Value, IRmax, item.Value[0].Item2, latenta, NR_PORT, N_PEN, FR_IC, FR, SIZE_DC, SIZE_IC, IBS);
+                Tuple<double, double, int, int, int, int, int> temp = Simulate(item.Value);
                 instructions += item.Key + Environment.NewLine;
                 results += item.Key + Environment.NewLine;
 
-                instructions += "Load: " + temp.Item5 + Environment.NewLine;
+                instructions += "Load: " + temp.Item3 + Environment.NewLine;
                 instructions += "Store: " + temp.Item4 + Environment.NewLine;
-                instructions += "Branch: " + temp.Item3 + Environment.NewLine;
+                instructions += "Branch: " + temp.Item5 + Environment.NewLine;
+                instructions += "Arytmetic: " + temp.Item6 + Environment.NewLine;
                 instructions += "Total: " + temp.Item7 + Environment.NewLine;
 
-                results += "One-cycle: " + temp.Item2 + Environment.NewLine; //nu-s sigur daca sunt oneticks
-                results += "Issue Rate: " + temp.Item1 + Environment.NewLine;
-                results += "Ticks: " + temp.Item6 + Environment.NewLine;
+                results += "Issue Rate: " + Convert.ToString(temp.Item1) + Environment.NewLine;
+                results += "Ticks: " + Convert.ToString(temp.Item2) + Environment.NewLine;
 
-                loadList.Add(temp.Item5.ToString());
+                loadList.Add(temp.Item3.ToString());
                 storeList.Add(temp.Item4.ToString());
-                branchList.Add(temp.Item3.ToString());
+                branchList.Add(temp.Item5.ToString());
+                arythmeticList.Add(temp.Item6.ToString());
                 totalList.Add(temp.Item7.ToString());
 
-                oneCycleList.Add(temp.Item2.ToString());
                 issueRateList.Add(temp.Item1.ToString());
-                ticksList.Add(temp.Item6.ToString());
+                ticksList.Add(temp.Item2.ToString());
 
                 instructions += Environment.NewLine;
                 results += Environment.NewLine;
@@ -254,6 +274,140 @@ namespace A2
             textBoxRezultate.Text = results;
             textBoxInstructiuni.Text = instructions;
             textBoxConsole.Text = "Finnished!";
+        }
+
+        private Tuple<double, double, int, int, int, int, int> Simulate(List<Instruction> instructionsFromBenchmark) 
+        {
+            Instruction[,] instructionsFromMemory;
+
+            int loadInstructions = 0;
+            int storeInstructions = 0;
+            int branchInstructions = 0;
+            int arithmeticInstructions = 0;
+            int totalInstructions = 0;
+
+            int availableAccessToMemoryPerCycle = 0;
+            int numberOfMemoryAccesses = 0;
+            int missCachePenalty = 0;
+            double cacheMiss = 0.1;
+
+            //int oneCycle = 0;
+            int ticks = 0;
+            double issueRate = 0;
+
+            int rowsNumber = 0;
+            int PCnormal;
+
+            availableAccessToMemoryPerCycle = NR_PORT;
+
+            PCnormal = 0;
+
+            instructionsFromMemory = new Instruction[100000000, IRmax];
+
+            int row = 0;
+            int col = 0;
+            foreach (Instruction instruction in instructionsFromBenchmark)
+            {
+                while (instruction.currentPC != PCnormal)
+                {
+                    if (col == IRmax)
+                    {
+                        row++;
+                        col = 0;
+                    }
+
+                    //adauga o instructiune alu in matricea instructiuniAduseDinMemorie
+                    instructionsFromMemory[row, col++] = new Instruction
+                    {
+                        instructionType = InstructionType.Arithmetic
+                    };
+
+                    PCnormal++;
+                    arithmeticInstructions++;
+                }
+
+                if (instruction.instructionType == InstructionType.Branch)
+                {
+                    if (col == IRmax)
+                    {
+                        row++;
+                        col = 0;
+                    }
+
+                    //adauga o instructiune B in matricea instructiuniAduseDinMemorie
+                    instructionsFromMemory[row, col++] = instruction;
+
+                    PCnormal = (int)instruction.targetAddress;
+                    branchInstructions++;
+                }
+
+                if (instruction.instructionType == InstructionType.Store)
+                {
+                    if (col == IRmax)
+                    {
+                        row++;
+                        col = 0;
+                    }
+
+                    //adauga o instructiune S in matricea instructiuniAduseDinMemorie
+                    instructionsFromMemory[row, col++] = instruction;
+
+                    PCnormal++;
+                    storeInstructions++;
+                }
+
+                if (instruction.instructionType == InstructionType.Load)
+                {
+                    if (col == IRmax)
+                    {
+                        row++;
+                        col = 0;
+                    }
+
+                    //adauga o instructiune L in matricea instructiuniAduseDinMemorie
+                    instructionsFromMemory[row, col++] = instruction;
+
+                    PCnormal++;
+                    loadInstructions++;
+                }
+            }
+            rowsNumber = row;
+
+            var latency = Convert.ToInt32(latenta);
+            var penalties = Convert.ToInt32(N_PEN);
+
+            ticks = latency * rowsNumber;
+
+            missCachePenalty = Convert.ToInt32(loadInstructions * cacheMiss * missCachePenalty);
+            ticks += missCachePenalty;
+
+            foreach (Instruction instruction in instructionsFromMemory)
+            {
+                if (instruction != null)
+                {
+                    if (numberOfMemoryAccesses < availableAccessToMemoryPerCycle)
+                    {
+                        if (instruction.instructionType == InstructionType.Load || instruction.instructionType == InstructionType.Store)
+                        {
+                            numberOfMemoryAccesses++;
+                        }
+                    }
+                    else
+                    {
+                        if (instruction.instructionType == InstructionType.Load || instruction.instructionType == InstructionType.Store)
+                        {
+                            numberOfMemoryAccesses = 0;
+                            ticks += latency;
+                        }
+                    }
+                }
+            }
+
+            totalInstructions = loadInstructions + storeInstructions + branchInstructions + arithmeticInstructions;
+            issueRate = (Convert.ToDouble(totalInstructions) / Convert.ToDouble(ticks));
+            issueRate = Math.Round(issueRate, 3);
+
+            return new Tuple<double, double, int, int, int, int, int>(issueRate, ticks, loadInstructions, storeInstructions, branchInstructions, arithmeticInstructions, totalInstructions);
         }
 
         private void WriteResults()
@@ -264,8 +418,8 @@ namespace A2
                 string loads = string.Empty;
                 string stores = string.Empty;
                 string branches = string.Empty;
+                string arythmetics = string.Empty;
                 string totals = string.Empty;
-                string oneCycles = string.Empty;
                 string issueRates = string.Empty;
                 string multiTicks = string.Empty;
 
@@ -285,13 +439,13 @@ namespace A2
                 {
                     branches += s + ",";
                 }
+                foreach (string s in arythmeticList)
+                {
+                    arythmetics += s + ",";
+                }
                 foreach (string s in totalList) 
                 {
                     totals += s + ",";
-                }
-                foreach (string s in oneCycleList) 
-                {
-                    oneCycles += s + ",";
                 }
                 foreach (string s in issueRateList) 
                 {
@@ -306,8 +460,8 @@ namespace A2
                 sw.WriteLine(loads);
                 sw.WriteLine(stores);
                 sw.WriteLine(branches);
+                sw.WriteLine(arythmetics);
                 sw.WriteLine(totals);
-                sw.WriteLine(oneCycles);
                 sw.WriteLine(issueRates);
                 sw.WriteLine(multiTicks);
                 sw.Close();
