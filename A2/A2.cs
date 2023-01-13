@@ -414,14 +414,14 @@ namespace A2
         {
             using (StreamWriter sw = new StreamWriter(@"..\..\..\output\results.csv"))
             {
-                string names = string.Empty;
-                string loads = string.Empty;
-                string stores = string.Empty;
-                string branches = string.Empty;
-                string arythmetics = string.Empty;
-                string totals = string.Empty;
-                string issueRates = string.Empty;
-                string multiTicks = string.Empty;
+                string names = "Files,";
+                string loads = "Loads,";
+                string stores = "Stores,";
+                string branches = "Branches,";
+                string arythmetics = "Arythmetics,";
+                string totals = "Totals,";
+                string issueRates = "Issue rates,";
+                string multiTicks = "Ticks,";
 
                 foreach (var fileName in allTraceData) 
                 {
