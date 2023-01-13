@@ -212,7 +212,7 @@ namespace A2
             List<Instruction> instructionsFromBenchmark = new List<Instruction>();
             string filePath = file.FullName;
             List<string> fileContent = new List<string>();
-            if (!String.IsNullOrEmpty(filePath))
+            if (!string.IsNullOrEmpty(filePath))
             {
                 fileContent = File.ReadAllText(filePath).Split(' ').Select(a => a.Trim()).ToList();
                 fileContent = fileContent.Where(x => string.IsNullOrWhiteSpace(x) == false).ToList();
@@ -291,17 +291,12 @@ namespace A2
             int missCachePenalty = 0;
             double cacheMiss = 0.1;
 
-            //int oneCycle = 0;
             int ticks = 0;
             double issueRate = 0;
-
-            int rowsNumber = 0;
             int PCnormal;
 
             availableAccessToMemoryPerCycle = NR_PORT;
-
             PCnormal = 0;
-
             instructionsFromMemory = new Instruction[100000000, IRmax];
 
             int row = 0;
@@ -371,12 +366,10 @@ namespace A2
                     loadInstructions++;
                 }
             }
-            rowsNumber = row;
 
-            var latency = Convert.ToInt32(latenta);
-            var penalties = Convert.ToInt32(N_PEN);
-
-            ticks = latency * rowsNumber;
+            var latency = latenta;
+            var penalties = N_PEN;
+            ticks = latency * row;
 
             missCachePenalty = Convert.ToInt32(loadInstructions * cacheMiss * missCachePenalty);
             ticks += missCachePenalty;
